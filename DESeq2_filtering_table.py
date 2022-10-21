@@ -1,4 +1,7 @@
 ############## STEP I ###############################################
+# Filter the significative L2FC in one timepoint
+# DESeq2 output
+
 def FilterTable(file, name, padjThreshold = 0.05, L2FCThreshold = 1):
     """
     Function that reads the input file, select and save in a text file the genes with : 
@@ -69,6 +72,9 @@ def FilterTable(file, name, padjThreshold = 0.05, L2FCThreshold = 1):
 
 
 ############## STEP II ###############################################
+# From a merged table : padj + L2FC accross all the timepoints
+# Select only the genes that have a signicative L2FC in AT LEAST one timepoint
+
 def FilterMergedTable(file, name, ListDict):
     """
     Function that read the input file and select the genes that have a significant differential expression
@@ -85,7 +91,8 @@ def FilterMergedTable(file, name, ListDict):
     - ListDict : (list) containing all the dictionnary from the function FilterTable(file, name, padjThreshold, L2FCThreshold)
     
     RETURN 
-    Write a file text containing the filtered values accross all the timepoints
+    - FilteredGenes : (list) containing the names of all the genes that have been selected
+    Write a file text containing the filtered genes & values accross all the timepoints
 
     ### Output file structure ################################################
     
@@ -136,3 +143,64 @@ def FilterMergedTable(file, name, ListDict):
         cpt+=1 
     print('\nNumber of genes filtered-in accross all the timepoints : '+str(nbCheck)+'\n')
     return FilteredGenes
+
+############## STEP III ###############################################
+# From a file with all the filtered genes and their L2FC+padj values
+# Creates a matrix containing only the L2FC ready for K-means clustering algorithm
+
+def KmeanMatrix(file, ofile):
+    """
+    Function that from a file creates a file to use for K-mean clusterisation. 
+    
+    PARAMETERS
+    - file : (str) path to the file
+    - ofile : (str) name of the output file 
+    
+    ### Intput file structure ################################################
+    #geneNames #L2FC_t0 #padj_t0 #L2FC_t1 #padj_t1 ... #L2FC_t+n #padj_t+n
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+    ##########################################################################    
+
+    """
+    # I - Initialisation
+    rf = open(file, 'r')
+    wf = open('L2FC_Matrix.'+ofile+".txt",'w')
+    cpt = 0
+    NA_nb = 0
+    G_nb = 0
+    
+    # II - Filtering-out the padj values
+    # (A) - Reading the file
+    for line in rf :
+        lineS = line.split() 
+        
+        # (A)(i) - Particular case for the header
+        if cpt == 0 :
+            header = "#"+lineS[0]
+            for i in range(1,len(lineS),2) : 
+                header += "," + lineS[i]
+            header += '\n'
+            wf.write(header)
+            
+        # (A)(ii) - Saving the L2FC accross all the timepoints in a file
+        else :
+            if "NA" not in lineS : 
+                if len(lineS)!=0 :
+                    row = lineS[0]
+                    for i in range(1,len(lineS),2) : 
+                        row += ","+ lineS[i]
+                    row += '\n'
+                    wf.write(row)
+                    G_nb +=1
+            if ("NA" in lineS) or (len(lineS)==0) : 
+                NA_nb +=1
+        cpt+=1
+    wf.close
+    rf.close
+    
+    print("Some informations :\n(*)",NA_nb," NA values\n(*)",G_nb," genes ready to use for k-means clusterisating\n")
+    return 
