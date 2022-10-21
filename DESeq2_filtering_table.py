@@ -1,3 +1,4 @@
+############## STEP I ###############################################
 def FilterTable(file, name, padjThreshold = 0.05, L2FCThreshold = 1):
     """
     Function that reads the input file, select and save in a text file the genes with : 
@@ -65,3 +66,73 @@ def FilterTable(file, name, padjThreshold = 0.05, L2FCThreshold = 1):
         cpt+=1 
     wf.write('\nNumber of genes filtered in : '+str(cptF))
     return FilteredDict 
+
+
+############## STEP II ###############################################
+def FilterMergedTable(file, name, ListDict):
+    """
+    Function that read the input file and select the genes that have a significant differential expression
+    in AT LEAST ONE time point.
+            
+    ### WARNING #############################################################
+    * 1 file for all the timepoints
+    * The input file is a merged file from DeSeq2 R package  
+    #########################################################################
+    
+    PARAMETERS  
+    - file : (str) path to the file
+    - name : (str) name of the output file
+    - ListDict : (list) containing all the dictionnary from the function FilterTable(file, name, padjThreshold, L2FCThreshold)
+    
+    RETURN 
+    Write a file text containing the filtered values accross all the timepoints
+
+    ### Output file structure ################################################
+    
+    #geneNames #L2FC_t0 #padj_t0 #L2FC_t1 #padj_t1 ... #L2FC_t+n #padj_t+n
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      ....       ...     ...       ...     ...     ...     ...      ...
+      
+    #########################################################################
+
+
+    """
+    FilteredGenes = []
+    nbCheck = 0
+    # 0 - Extracting all the dictionnary keys 
+    # To extract all the genes that have a significant differential expression in at least 1 timepoiny
+    for FilteredDic in ListDict : 
+        for gene in FilteredDic.keys() : 
+            if gene not in FilteredGenes :
+                FilteredGenes.append(gene)
+
+    # I - Initialisation
+    rf = open(file, 'r')
+    wf = open('AllSignificativeGenesTable.'+name+".txt",'w')
+    cpt = 0
+    
+    # II - Filtering
+    
+    # (i) - Reading the file
+    for line in rf :
+        lineS = line.split() #each line is splitted in a list of (n*2)+1 element
+        # first element of the list (index = 0) : gene name
+        # n the number of timepoints, each timepoint has 2 values : L2FC and padj
+        
+        # (ii) - Particular case for the header
+        if cpt ==0 : 
+            wf.write(line+'\n')
+
+        # (iii) - Filtering based on the padj value and L2FC
+        else :
+            if (lineS[0] in FilteredGenes) : #writing only the genes that has been filtered-in in the new file
+            #we're taking only the values that are significant in at least one time point
+                nbCheck +=1 
+                wf.write(line) #saving all the line in a file
+       
+        cpt+=1 
+    print('\nNumber of genes filtered-in accross all the timepoints : '+str(nbCheck)+'\n')
+    return FilteredGenes
