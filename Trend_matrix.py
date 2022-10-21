@@ -1,3 +1,5 @@
+import numpy as np
+
 def Trend(matrixfile,outputfile,k):
     """
     A function that transform a numeric matrix in a binary matrix.
