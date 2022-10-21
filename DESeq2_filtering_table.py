@@ -64,4 +64,4 @@ def FilterTable(file, name, padjThreshold = 0.05, L2FCThreshold = 1):
                     cptF+=1 #counting gene number
         cpt+=1 
     wf.write('\nNumber of genes filtered in : '+str(cptF))
-    return FilteredDict
+    return FilteredDict 
